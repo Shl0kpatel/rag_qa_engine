@@ -43,5 +43,6 @@ dist/
 data/raw/
 data/processed/
 data/vectors/
-
+chunks.pkl
+faiss_index.bin
 # If you generate local DB/vector stores elsewhere, add them here.
