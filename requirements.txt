@@ -1,0 +1,62 @@
+# -----------------------------
+# Core Python utilities
+# -----------------------------
+python-dotenv==1.0.1
+tqdm==4.66.4
+pydantic==2.7.4
+typing-extensions==4.12.2
+
+# -----------------------------
+# PDF & document ingestion
+# -----------------------------
+pdfplumber==0.11.4
+PyMuPDF==1.24.9
+pypdf==4.3.1
+
+# -----------------------------
+# Text processing & cleaning
+# -----------------------------
+regex==2024.7.24
+beautifulsoup4==4.12.3
+lxml==5.2.2
+nltk==3.9.1
+
+# -----------------------------
+# Chunking & tokenization
+# -----------------------------
+tiktoken==0.7.0
+
+# -----------------------------
+# Embeddings & LLM access
+# -----------------------------
+openai==1.40.6
+sentence-transformers==3.0.1
+
+# -----------------------------
+# Vector database
+# -----------------------------
+chromadb==0.5.4
+chroma-hnswlib==0.7.5
+
+# -----------------------------
+# Retrieval & RAG framework (light use, no over-dependence)
+# -----------------------------
+langchain-core==0.2.32
+langchain-text-splitters==0.2.2
+
+# -----------------------------
+# Backend API (if/when exposed)
+# -----------------------------
+fastapi==0.112.0
+uvicorn==0.30.5
+
+# -----------------------------
+# Logging & debugging
+# -----------------------------
+loguru==0.7.2
+
+# -----------------------------
+# Optional (future-proofing)
+# -----------------------------
+numpy==1.26.4
+scikit-learn==1.5.1

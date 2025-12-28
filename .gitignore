@@ -1,0 +1,47 @@
+# -----------------------------
+# Python / tooling
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyd
+
+.venv/
+venv/
+ENV/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+build/
+dist/
+*.egg-info/
+
+# -----------------------------
+# Environment & secrets
+# -----------------------------
+.env
+.env.*
+
+# -----------------------------
+# IDE
+# -----------------------------
+.vscode/
+.idea/
+
+# -----------------------------
+# Logs
+# -----------------------------
+*.log
+
+# -----------------------------
+# Project data/artifacts
+# -----------------------------
+data/raw/
+data/processed/
+data/vectors/
+
+# If you generate local DB/vector stores elsewhere, add them here.
