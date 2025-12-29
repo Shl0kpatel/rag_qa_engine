@@ -1,23 +1,20 @@
-import os
-from pdf_loader import load_pdf_as_text
+from __future__ import annotations
 
-RAW_PDF_PATH = "data/raw_pdfs/google_sre.pdf"
-CACHE_TEXT_PATH = "data/raw_text/google_sre.txt"
+from pathlib import Path
 
-def get_raw_text() -> str:
-    if os.path.exists(CACHE_TEXT_PATH):
-        with open(CACHE_TEXT_PATH, "r", encoding="utf-8") as f:
-            return f.read()
+from backend.ingestion.pdf_loader import load_pdf_as_text
+from backend.utils.paths import raw_pdfs_dir, raw_text_dir
 
-    text = load_pdf_as_text(RAW_PDF_PATH)
 
-    os.makedirs(os.path.dirname(CACHE_TEXT_PATH), exist_ok=True)
-    with open(CACHE_TEXT_PATH, "w", encoding="utf-8") as f:
-        f.write(text)
+def get_raw_text(pdf_filename: str) -> str:
+    """Load a PDF from data/raw/raw_pdfs and cache extracted text in data/raw/raw_text."""
+    pdf_path = raw_pdfs_dir() / pdf_filename
+    cache_path = raw_text_dir() / (Path(pdf_filename).stem + ".txt")
 
+    if cache_path.exists():
+        return cache_path.read_text(encoding="utf-8")
+
+    text = load_pdf_as_text(str(pdf_path))
+    raw_text_dir().mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(text, encoding="utf-8")
     return text
-
-
-if __name__ == "__main__":
-    text = get_raw_text()
-    print(text[:1000])

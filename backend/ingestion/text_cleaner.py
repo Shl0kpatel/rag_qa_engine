@@ -8,7 +8,7 @@ def normalize_text(raw_text: str) -> str:
 
 
 if __name__ == "__main__":
-    with open("data/raw_text/google_sre.txt", "r", encoding="utf-8") as f:
+    with open("data/raw/raw_text/google_sre.txt", "r", encoding="utf-8") as f:
         raw_text = f.read()
 
     cleaned_text = normalize_text(raw_text)

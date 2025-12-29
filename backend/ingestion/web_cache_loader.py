@@ -1,8 +1,10 @@
-import os
-import re
-from web_loader import load_webpage_as_text
+from __future__ import annotations
 
-RAW_WEB_DIR = "data/raw/raw_web"
+import re
+from pathlib import Path
+
+from backend.ingestion.web_loader import load_webpage_as_text
+from backend.utils.paths import raw_web_dir
 
 
 def url_to_filename(url: str) -> str:
@@ -12,19 +14,17 @@ def url_to_filename(url: str) -> str:
 
 
 def get_web_text(url: str) -> str:
-    os.makedirs(RAW_WEB_DIR, exist_ok=True)
+    raw_web_dir().mkdir(parents=True, exist_ok=True)
 
     filename = url_to_filename(url)
-    cache_path = os.path.join(RAW_WEB_DIR, filename)
+    cache_path = raw_web_dir() / filename
 
-    if os.path.exists(cache_path):
-        with open(cache_path, "r", encoding="utf-8") as f:
-            return f.read()
+    if cache_path.exists():
+        return cache_path.read_text(encoding="utf-8")
 
     text = load_webpage_as_text(url)
 
-    with open(cache_path, "w", encoding="utf-8") as f:
-        f.write(text)
+    cache_path.write_text(text, encoding="utf-8")
 
     return text
 
