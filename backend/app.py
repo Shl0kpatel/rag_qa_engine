@@ -10,7 +10,7 @@ if __package__ is None or __package__ == "":
 import shutil
 from pathlib import Path
 
-from backend.embeddings.vector_store import add_records, has_index
+from backend.embeddings.vector_store import add_records, clear_index, has_index
 from backend.evaluation.answer_evaluator import evaluate_answer
 from backend.evaluation.source_attribution import extract_sources
 from backend.ingestion.pdf_loader import load_pdf_pages
@@ -89,7 +89,6 @@ def _ensure_pdf_in_raw_pdfs(user_input: str) -> Path:
             shutil.copy2(candidate, dest)
         return dest
 
-    # treat as filename under raw_pdfs
     dest = raw_pdfs_dir() / user_input
     if dest.exists() and dest.is_file():
         return dest
@@ -187,24 +186,32 @@ def main() -> None:
         print("\nVector index not found. Ingestion is required before Q&A.")
         return
 
-    while True:
-        user_query = input("\nAsk a question (or type 'exit'): ").strip()
-        if user_query.lower() == "exit":
-            break
-        if not user_query:
-            continue
+    try:
+        while True:
+            user_query = input("\nAsk a question (or type 'exit'): ").strip()
+            if user_query.lower() == "exit":
+                break
+            if not user_query:
+                continue
 
-        result = run_query(user_query)
+            result = run_query(user_query)
 
-        print("\nAnswer:")
-        print(result["answer"])
+            print("\nAnswer:")
+            print(result["answer"])
 
-        print(f"\nConfidence: {result['confidence']}")
+            print(f"\nConfidence: {result['confidence']}")
 
-        if result["sources"]:
-            print("\nCitations:")
-            for src in result["sources"]:
-                print(f"- {src}")
+            if result["sources"]:
+                print("\nCitations:")
+                for src in result["sources"]:
+                    print(f"- {src}")
+    finally:
+        # Optional privacy-by-default: clear vectors on exit so next user
+        # doesn't see previous ingested data.
+        ans = input("\nClear vector data on exit? [y/N]: ").strip().lower()
+        if ans in {"y", "yes"}:
+            clear_index()
+            print("Vector data cleared.")
 
 
 if __name__ == "__main__":

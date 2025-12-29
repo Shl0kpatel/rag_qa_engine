@@ -38,6 +38,24 @@ def has_index() -> bool:
     return _index_path().exists() and _records_path().exists()
 
 
+def clear_index() -> None:
+    """Delete persisted vector data so the next run starts fresh."""
+    for p in (_index_path(), _records_path()):
+        try:
+            p.unlink(missing_ok=True)
+        except Exception:
+            # Best-effort cleanup; caller may be exiting.
+            pass
+
+    # Backward-compat cleanup (older versions wrote these in repo root).
+    legacy_files = [Path("faiss_index.bin"), Path("chunks.pkl")]
+    for p in legacy_files:
+        try:
+            p.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
 def build_index(records: list[dict[str, Any]]) -> None:
     """Create a fresh FAISS index from records.
 
