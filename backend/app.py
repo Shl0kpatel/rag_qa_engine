@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# Allow running as `python backend/app.py` as well as `python -m backend.app`.
+
 if __package__ is None or __package__ == "":
     import sys
     from pathlib import Path
@@ -23,9 +23,9 @@ from backend.processing.chunker import make_chunks
 from backend.retrieval.retriever import retrieve_chunks
 from backend.utils.paths import raw_pdfs_dir, raw_text_dir
 
-def run_query(query):
+def run_query(query: str, top_k: int = 5):
     # -------- Step 8: Retrieval --------
-    retrieved_chunks, similarity_scores = retrieve_chunks(query)
+    retrieved_chunks, similarity_scores = retrieve_chunks(query, top_k=top_k)
 
     if not retrieved_chunks:
         return {
@@ -40,7 +40,6 @@ def run_query(query):
     try:
         raw_answer = generate_answer(prompt)
     except RuntimeError as e:
-        # LLM not configured (e.g., GROQ_API_KEY missing)
         return {
             "answer": f"LLM not configured.\n{e}",
             "confidence": 0.0,
@@ -64,6 +63,53 @@ def run_query(query):
     }
 
 
+def ingest_pdf_path(pdf_path: Path) -> int:
+    pages = load_pdf_pages(str(pdf_path))
+    if not pages:
+        raise ValueError("No extractable text found in the PDF.")
+
+    raw_text_dir().mkdir(parents=True, exist_ok=True)
+    combined_text = "\n\n".join(p["text"] for p in pages)
+    combined_text = normalize_text(combined_text)
+    (raw_text_dir() / f"{pdf_path.stem}.txt").write_text(combined_text, encoding="utf-8")
+
+    records: list[dict] = []
+    for p in pages:
+        page_num = int(p["page"])
+        page_text = normalize_text(p["text"])
+        if not page_text:
+            continue
+
+        for chunk in make_chunks(page_text):
+            records.append(
+                {
+                    "text": chunk,
+                    "type": "pdf",
+                    "file": pdf_path.name,
+                    "page": page_num,
+                    "source": f"{pdf_path.name} (page {page_num})",
+                }
+            )
+
+    add_records(records)
+    return len(records)
+
+
+def ingest_url_text(url: str) -> int:
+    text = get_web_text(url)
+    text = normalize_text(text)
+    if not text:
+        raise ValueError("No extractable text found on the page.")
+
+    records = [
+        {"text": chunk, "type": "web", "url": url, "source": url}
+        for chunk in make_chunks(text)
+    ]
+
+    add_records(records)
+    return len(records)
+
+
 def _prompt_choice() -> str:
     while True:
         choice = input("\nSelect ingestion source: [1] PDF  [2] URL  (or 'exit'): ").strip()
@@ -75,11 +121,7 @@ def _prompt_choice() -> str:
 
 
 def _ensure_pdf_in_raw_pdfs(user_input: str) -> Path:
-    """Return path to a PDF stored under data/raw/raw_pdfs.
-
-    Accepts either a filename (already in raw_pdfs) or a full path to a PDF,
-    which will be copied into raw_pdfs.
-    """
+    
     raw_pdfs_dir().mkdir(parents=True, exist_ok=True)
 
     candidate = Path(user_input).expanduser()
@@ -112,36 +154,13 @@ def ingest_pdf() -> None:
         except Exception as e:
             print(str(e))
 
-    pages = load_pdf_pages(str(pdf_path))
-    if not pages:
-        print("No extractable text found in the PDF.")
+    try:
+        chunks = ingest_pdf_path(pdf_path)
+    except Exception as e:
+        print(str(e))
         return
 
-    raw_text_dir().mkdir(parents=True, exist_ok=True)
-    combined_text = "\n\n".join(p["text"] for p in pages)
-    combined_text = normalize_text(combined_text)
-    (raw_text_dir() / f"{pdf_path.stem}.txt").write_text(combined_text, encoding="utf-8")
-
-    records: list[dict] = []
-    for p in pages:
-        page_num = int(p["page"])
-        page_text = normalize_text(p["text"])
-        if not page_text:
-            continue
-
-        for chunk in make_chunks(page_text):
-            records.append(
-                {
-                    "text": chunk,
-                    "type": "pdf",
-                    "file": pdf_path.name,
-                    "page": page_num,
-                    "source": f"{pdf_path.name} (page {page_num})",
-                }
-            )
-
-    add_records(records)
-    print(f"Ingested PDF: {pdf_path.name} (chunks: {len(records)})")
+    print(f"Ingested PDF: {pdf_path.name} (chunks: {chunks})")
 
 
 def ingest_url() -> None:
@@ -153,19 +172,13 @@ def ingest_url() -> None:
             break
         print("Please enter a valid http(s) URL.")
 
-    text = get_web_text(url)
-    text = normalize_text(text)
-    if not text:
-        print("No extractable text found on the page.")
+    try:
+        chunks = ingest_url_text(url)
+    except Exception as e:
+        print(str(e))
         return
 
-    records = [
-        {"text": chunk, "type": "web", "url": url, "source": url}
-        for chunk in make_chunks(text)
-    ]
-
-    add_records(records)
-    print(f"Ingested URL: {url} (chunks: {len(records)})")
+    print(f"Ingested URL: {url} (chunks: {chunks})")
 
 
 def main() -> None:
@@ -206,8 +219,6 @@ def main() -> None:
                 for src in result["sources"]:
                     print(f"- {src}")
     finally:
-        # Optional privacy-by-default: clear vectors on exit so next user
-        # doesn't see previous ingested data.
         ans = input("\nClear vector data on exit? [y/N]: ").strip().lower()
         if ans in {"y", "yes"}:
             clear_index()
