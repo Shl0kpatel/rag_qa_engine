@@ -1,0 +1,12 @@
+# Streamlit configuration
+# Docs: https://docs.streamlit.io/develop/api-reference/configuration/config.toml
+
+[server]
+headless = true
+
+# If your app is embedded behind a reverse proxy, these can be useful.
+# enableCORS = false
+# enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
